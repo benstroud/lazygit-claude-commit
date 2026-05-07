@@ -6,13 +6,15 @@ A [Claude Code](https://claude.ai/code) skill that adds a [lazygit](https://gith
 
 Drops a `customCommands` entry into your lazygit user config (whatever `lazygit --print-config-dir` reports — `~/Library/Application Support/lazygit/config.yml` on macOS, `~/.config/lazygit/config.yml` on Linux) so that, from the lazygit Files panel, you can press `Ctrl+A` to:
 
-1. Pipe the staged diff (`git diff --cached`) to `claude -p --bare`.
+1. Pipe instructions + the staged diff (`git diff --cached`) to `claude -p --tools ""`.
 2. Open the generated message in your `$EDITOR`, pre-filled.
 3. Commit (or quit empty to abort) with pre-commit hooks running normally.
 
 Why these specific choices:
 
-- **`claude -p --bare`** — `--bare` skips hooks, CLAUDE.md auto-discovery, auto-memory, plugin sync, and keychain reads. Fastest startup, no surprising context, the model only sees the diff.
+- **Plain `claude -p`, not `claude -p --bare`** — `--bare` is tempting (skips CLAUDE.md, hooks, auto-memory) but also disables OAuth/keychain auth, demanding `ANTHROPIC_API_KEY` instead. Most Claude Code users authenticate via OAuth, so `--bare` returns "Not logged in" and the command exits before the editor opens.
+- **`--tools ""`** — disables all tools so the model can only generate text. Without it the model may try to read related files or run bash to "understand context," turning a one-shot text generation into a multi-turn agent loop.
+- **Instructions before diff in stdin** — when `claude -p` receives a diff first and instructions second (or instructions only via prompt-arg with diff via stdin), the model often replies "What would you like me to do with this diff?" instead of following the instructions. Putting instructions first then diff via stdin gets reliable single-message output.
 - **`git commit --edit -F <tmp>`** — the model drafts; you approve. Lets you fix bad output without rerunning, and pre-commit hooks still run.
 - **Empty-staged-diff guard** — refuses to call Claude (or open an empty editor) when there's nothing staged.
 
