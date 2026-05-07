@@ -5,7 +5,7 @@ description: Set up a lazygit custom command that generates Git commit messages 
 
 # lazygit-claude-commit
 
-Adds a `customCommands` entry to `~/.config/lazygit/config.yml` that, when triggered from the Files panel, pipes the staged diff to `claude -p --bare` and opens the resulting message in `$EDITOR` for review before the commit lands.
+Adds a `customCommands` entry to lazygit's user config (path resolved via `lazygit --print-config-dir` — `~/Library/Application Support/lazygit/config.yml` on macOS, `~/.config/lazygit/config.yml` on Linux) that, when triggered from the Files panel, pipes the staged diff to `claude -p --bare` and opens the resulting message in `$EDITOR` for review before the commit lands.
 
 ## Why this design
 
@@ -28,9 +28,23 @@ command -v lazygit && command -v claude
 
 If either is missing, stop and tell the user what to install (`brew install lazygit` and the Claude CLI from Anthropic's docs). Don't proceed with a partially working setup.
 
-### Step 2: Inspect the existing config
+### Step 2: Find the config path
 
-The config lives at `~/.config/lazygit/config.yml`. Read it before writing — there are three cases to handle differently:
+**Don't assume the path.** lazygit's config location is platform-dependent and respects `XDG_CONFIG_HOME`. On macOS the default is `~/Library/Application Support/lazygit/config.yml`, on Linux it's typically `~/.config/lazygit/config.yml`, and either platform can be overridden by env vars. Hardcoding the wrong path silently produces a config file lazygit will never read — the most common failure mode for this skill.
+
+Always discover the path at runtime:
+
+```bash
+lazygit --print-config-dir
+```
+
+The config file is `<that-dir>/config.yml`. Use that path for every read and write below. If the directory doesn't exist yet, `mkdir -p` it.
+
+> Common gotcha on macOS: a stale `~/.config/lazygit/config.yml` from earlier dotfile setups or cross-platform copying. lazygit will still ignore it. If the user reports "I edited the file but nothing changed," check whether they edited the XDG path while lazygit reads the Application Support path. Either move the file or `ln -s` it, but resolve the divergence — two config files drift.
+
+### Step 3: Inspect the existing config
+
+Read the discovered config file before writing — there are three cases to handle differently:
 
 1. **File missing or empty** → write the full config block fresh.
 2. **File exists, no `customCommands` key** → append a top-level `customCommands:` list with this entry.

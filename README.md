@@ -4,7 +4,7 @@ A [Claude Code](https://claude.ai/code) skill that adds a [lazygit](https://gith
 
 ## What it does
 
-Drops a `customCommands` entry into `~/.config/lazygit/config.yml` so that, from the lazygit Files panel, you can press `Ctrl+A` to:
+Drops a `customCommands` entry into your lazygit user config (whatever `lazygit --print-config-dir` reports — `~/Library/Application Support/lazygit/config.yml` on macOS, `~/.config/lazygit/config.yml` on Linux) so that, from the lazygit Files panel, you can press `Ctrl+A` to:
 
 1. Pipe the staged diff (`git diff --cached`) to `claude -p --bare`.
 2. Open the generated message in your `$EDITOR`, pre-filled.
